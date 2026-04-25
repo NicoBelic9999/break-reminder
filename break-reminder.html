@@ -3,6 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#1a1612">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Break">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/svg+xml" href="icon.svg">
+<link rel="apple-touch-icon" href="icon.svg">
 <title>Break Time — Sit Less, Move More</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -1050,27 +1057,27 @@ const MINI_ACTIVITIES = [
 
 // ===== VIDEOS (filtered by mode) =====
 const VIDEOS = [
-  { url: 'https://www.youtube.com/watch?v=pHTW9r8ogLo', tag: 'Look taller',
-    name: 'The Posture Fix That Makes You Taller', author: 'Conor Harris (PT) · 2025',
-    modes: ['full', 'standing'] },
-  { url: 'https://www.youtube.com/watch?v=y_ltZI-gSbs', tag: 'Quick & focused',
-    name: '3 Best Posture Exercises (5 min)', author: 'Short and actionable · 2024',
+  { url: 'https://www.youtube.com/watch?v=wHYJkRxmoWI', tag: 'Daily stretch',
+    name: 'Daily Stretching Routine — Follow Along', author: 'Hybrid Calisthenics · full body warmup',
     modes: ['full', 'standing', 'office', 'wall', 'chair'] },
-  { url: 'https://www.youtube.com/watch?v=YAUGMT0_PiE', tag: 'Full routine',
-    name: 'Fix Bad Posture in 5 Minutes Forever', author: 'Rounded shoulders + forward head',
+  { url: 'https://www.youtube.com/watch?v=--P2MPoQovs', tag: 'All levels',
+    name: 'Daily Mobility Routine for Calisthenics Athletes', author: 'Hybrid Calisthenics · 2022',
     modes: ['full', 'standing'] },
-  { url: 'https://www.youtube.com/watch?v=_GZOIef4jtQ', tag: 'Just a wall',
-    name: '4 Wall Exercises to Improve Posture FAST', author: 'No equipment, only a wall',
-    modes: ['wall'] },
-  { url: 'https://www.youtube.com/watch?v=_poD7UcGqOk', tag: 'At your desk',
-    name: '6 Stretches To Fix Desk Posture', author: 'Rounded shoulders + tech neck',
-    modes: ['office', 'chair'] },
-  { url: 'https://www.youtube.com/watch?v=MgT2yuUHCws', tag: 'Increase height',
-    name: 'Correct Your Posture & Increase Height', author: 'Chris Heria · full body',
+  { url: 'https://www.youtube.com/watch?v=gOkCJ57IvNg', tag: 'Home routine',
+    name: 'Home Workout for Beginners (2023)', author: 'Hybrid Calisthenics',
     modes: ['full', 'standing'] },
-  { url: 'https://www.youtube.com/watch?v=i1tjJGGcoYs', tag: 'Reveal true height',
-    name: 'Perfect 5-Min Posture Routine', author: 'Daily routine to reveal height',
-    modes: ['full', 'standing'] },
+  { url: 'https://www.youtube.com/watch?v=cC5pPsiXO7s', tag: 'Posture fix',
+    name: 'How to Finally "Fix" Your Posture', author: 'Hybrid Calisthenics',
+    modes: ['full', 'standing', 'office', 'wall', 'chair'] },
+  { url: 'https://www.youtube.com/watch?v=vZA31GMOtZE', tag: 'Quick clips',
+    name: 'Fix Your Posture with Calisthenics (TikTok comp)', author: 'Hybrid Calisthenics',
+    modes: ['full', 'standing', 'office', 'chair'] },
+  { url: 'https://www.youtube.com/watch?v=U1oARCOjzKM', tag: 'Channel intro',
+    name: 'About Hybrid Calisthenics', author: 'Hampton — start here',
+    modes: ['full', 'standing', 'office', 'wall', 'chair'] },
+  { url: 'https://www.youtube.com/@HybridCalisthenics', tag: 'Browse channel',
+    name: 'Hybrid Calisthenics — full channel', author: 'Beginner-friendly bodyweight + mobility',
+    modes: ['full', 'standing', 'office', 'wall', 'chair'] },
 ];
 
 // ===== AFFIRMATIONS (random on routine completion) =====
@@ -1577,8 +1584,25 @@ function playSoftChime() {
 }
 function notify(message) {
   if (!notifOn || !('Notification' in window)) return;
-  if (Notification.permission === 'granted') {
-    new Notification('Break Time', { body: message });
+  if (Notification.permission !== 'granted') return;
+  const opts = {
+    body: message,
+    icon: 'icon.svg',
+    badge: 'icon.svg',
+    tag: 'break-reminder',
+    renotify: true,
+    vibrate: [200, 100, 200, 100, 200],
+    requireInteraction: phase === 'long' && strictMode
+  };
+  // Prefer SW notification on Android — supports vibrate, persists, click-to-focus
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.ready.then(reg => {
+      reg.showNotification('Break Time', opts);
+    }).catch(() => {
+      try { new Notification('Break Time', opts); } catch (e) {}
+    });
+  } else {
+    try { new Notification('Break Time', opts); } catch (e) {}
   }
 }
 function showToast(msg) {
@@ -1845,13 +1869,14 @@ function renderVideos() {
   const filtered = VIDEOS.filter(v => v.modes.includes(currentMode));
   $('videosTitle').textContent = `📺 Watch & learn (${filtered.length} for ${STRETCH_SETS[currentMode].label})`;
   const searchQueries = {
-    full: 'best+posture+routine+full+body',
-    office: 'desk+posture+stretches+office',
-    wall: 'wall+posture+exercises',
-    standing: 'standing+posture+stretches+no+equipment'
+    full: 'Hybrid+Calisthenics+mobility+routine',
+    office: 'Hybrid+Calisthenics+desk+stretches',
+    wall: 'Hybrid+Calisthenics+wall',
+    standing: 'Hybrid+Calisthenics+standing+stretches',
+    chair: 'Hybrid+Calisthenics+seated+stretches'
   };
-  const q = searchQueries[currentMode] || 'posture+exercises';
-  const searchLink = `<a class="video-search" href="https://www.youtube.com/results?search_query=${q}" target="_blank" rel="noopener">🔍 Search more on YouTube for ${STRETCH_SETS[currentMode].label}</a>`;
+  const q = searchQueries[currentMode] || 'Hybrid+Calisthenics';
+  const searchLink = `<a class="video-search" href="https://www.youtube.com/results?search_query=${q}" target="_blank" rel="noopener">🔍 More from Hybrid Calisthenics for ${STRETCH_SETS[currentMode].label}</a>`;
   if (filtered.length === 0) {
     list.innerHTML = `<div class="videos-empty">No videos for this mode yet.</div>${searchLink}`;
     return;
@@ -1981,6 +2006,15 @@ document.addEventListener('keydown', e => {
 
 // Update snooze bar every minute (in case it expires while idle)
 setInterval(updateSnoozeBar, 60000);
+
+// Service worker registration (PWA + offline + better notifications on Android)
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(err => {
+      console.warn('SW registration failed:', err);
+    });
+  });
+}
 
 document.querySelectorAll('.mode-chip').forEach(chip => {
   chip.onclick = () => {
